@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/* =========================
+   ENUMS
+   ========================= */
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum HostelType {
+  BOYS
+  GIRLS
+}
+
+enum RoomType {
+  SINGLE
+  TWO_IN_ONE
+  FOUR_IN_ONE
+  EIGHT_IN_ONE
+  TEN_IN_ONE
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CANCELLED
+}
+
+/* =========================
+   USER
+   ========================= */
+model User {
+  regNo        String   @id
+  name         String
+  passwordHash String
+  gender       Gender
+  role         Role
+
+  reservations Reservation[]
+
+  createdAt DateTime @default(now())
+}
+
+/* =========================
+   HOSTEL
+   ========================= */
+model Hostel {
+  id    Int        @id @default(autoincrement())
+  type  HostelType
+
+  floors Floor[]
+}
+
+/* =========================
+   FLOOR
+   ========================= */
+model Floor {
+  id       Int @id @default(autoincrement())
+  number   Int        // 0,1,2,3...
+  hostelId Int
+
+  hostel Hostel @relation(fields: [hostelId], references: [id])
+  rooms   Room[]
+
+  @@unique([number, hostelId])
+}
+
+/* =========================
+   ROOM
+   ========================= */
+model Room {
+  id         Int      @id @default(autoincrement())
+  roomNumber Int      // 301, 302, etc.
+  roomType   RoomType
+  ac         Boolean  @default(false)
+
+  floorId Int
+  floor   Floor @relation(fields: [floorId], references: [id])
+
+  beds Bed[]
+
+  @@unique([roomNumber, floorId])
+}
+
+/* =========================
+   BED
+   ========================= */
+model Bed {
+  id        Int @id @default(autoincrement())
+  bedNumber Int  // 1..N
+
+  roomId Int
+  room   Room @relation(fields: [roomId], references: [id])
+
+  reservations Reservation[]
+
+  @@unique([roomId, bedNumber])
+}
+
+/* =========================
+   RESERVATION
+   ========================= */
+model Reservation {
+  id     Int               @id @default(autoincrement())
+  status ReservationStatus @default(ACTIVE)
+
+  userRegNo String
+  bedId     Int
+
+  user User @relation(fields: [userRegNo], references: [regNo])
+  bed  Bed  @relation(fields: [bedId], references: [id])
+
+  createdAt DateTime @default(now())
+}
